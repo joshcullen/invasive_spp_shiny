@@ -1,0 +1,12 @@
+name: invasive_expert_elicitation
+title: invasive_expert_elicitation
+username:
+account: joshcullen
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4880018
+bundleId: 5151862
+url: https://joshcullen.shinyapps.io/invasive_expert_elicitation/
+when: 1634591138.24535
+asMultiple: FALSE
+asStatic: FALSE
