@@ -7,31 +7,27 @@
 
 
 library(shiny)
-library(raster)
+library(terra)  #in place of {raster}
 library(tidyverse)
-library(tigris)
-library(sp)
+library(leaflet)
+library(leaflet.extras)
+library(sf)
 library(shinythemes)
 
 
-### Generate state boundaries for SE United States
-se <- states(class = "sp") %>%
-    subset(NAME %in%
-               c("Florida",
-                 "South Carolina",
-                 "Georgia",
-                 "Alabama"))
-state.bounds<- fortify(se)  #to be read in ggplot2
+### Load state boundaries for SE United States
+se <- st_read("state_bounds.shp", crs = 4326, quiet = TRUE)
 
 
 ### Load fake LU/LC raster
-lulc<- raster("fake_lulc.tif")
+lulc<- rast("fake_lulc.tif")
 
 ### Create new raster for displaying habitat suitability
 hab_suit<- lulc
 values(hab_suit)[!is.na(values(lulc))]<- 0.5
 
 
+spp_names<- c("Burmese python", "Argentine black and white tegu", "Nile monitor")
 
 
 # Define UI for application that draws a histogram
@@ -85,6 +81,11 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
     sidebarLayout(
         sidebarPanel(
             h4("Expected Suitability of Land Cover"),
+            selectInput("species_habsuit",
+                        "Select a species",
+                        choices = spp_names,
+                        selected = spp_names[1]),
+            br(),
             sliderInput("forest",
                         "Forest",
                         min = 0,
@@ -109,16 +110,55 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                         min = 0,
                         max = 1,
                         value = 0.5,
-                        step = 0.05)
+                        step = 0.05),
+            actionButton("update_button",
+                         "Update Map",
+                         class = "btn-primary"),
+            br(),
+            br(),
+            br(),
+            br(),
+            sliderInput("conf_habsuit",
+                        "Confidence in Habitat Suitability:",
+                        min = 0,
+                        max = 1,
+                        value = 0.5,
+                        step = 0.25)
         ),  #close sidebarPanel
 
         # Show a plot of the generated distribution
         mainPanel(
-           plotOutput("habitatMap"),
-           plotOutput("lulcMap")
+          plotOutput("lulcMap"),
+           plotOutput("habitatMap")
         )  #close mainPanel
     )  #close sidebarLayout
-                 )  #close "Step 1" tabPanel
+                 ),  #close "Step 1" tabPanel
+
+
+
+
+    tabPanel("Step 2",
+             sidebarLayout(
+               sidebarPanel(
+                 h4("Likelihood of Occupancy"),
+                 selectInput("species_occ",
+                             "Select a species",
+                             choices = spp_names,
+                             selected = spp_names[1]),
+                 br(),
+                 sliderInput("conf_habsuit",
+                             "Confidence in Occupancy Selection:",
+                             min = 0,
+                             max = 1,
+                             value = 0.5,
+                             step = 0.25)
+               ),  #close sidebarPanel
+
+               mainPanel(
+                 leafletOutput("occ_map")
+               )  #close mainPanel
+             )  #close sidebarLayout
+             )  #close "Step 2" tabPanel
 )  #close navbarPage
 
 
@@ -127,11 +167,33 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
+  output$lulcMap <- renderPlot({
+
+    # change to data frame for viz in ggplot
+    lulc.df<- as.data.frame(lulc, xy = TRUE)
+    names(lulc.df)[3]<- "value"
+
+
+    ggplot() +
+      geom_tile(data = lulc.df, aes(x, y, fill = factor(value)), na.rm = TRUE,
+                  alpha = 0.8) +
+      scale_fill_manual("LU/LC",
+                        values = c("darkgreen", "lightblue", "darkred", "lightgreen"),
+                        labels = c("Forest", "Wetland", "Urban", "Grassland", "")) +
+      geom_sf(data = se, size = 1, color = "black", fill = "transparent") +
+      labs(x = "Longitude", y = "Latitude") +
+      theme_bw() +
+      theme(axis.title = element_text(size = 18),
+            axis.text = element_text(size = 14),
+            panel.grid = element_blank(),
+            legend.title = element_text(size = 14, face = "bold"),
+            legend.text = element_text(size = 12)) +
+      coord_sf()
+  })
 
     ### Adjust habitat suitability based on sliders
 
-
-    observeEvent(list(input$forest, input$wet, input$urban, input$grass), {
+    observeEvent(input$update_button, {
 
     #Forest
         ind.forest<- which(values(lulc) == 1)
@@ -159,11 +221,11 @@ server <- function(input, output) {
 
 
             ggplot() +
-                geom_raster(data = hab_suit.df, aes(x, y, fill = value), alpha = 0.8) +
+                geom_tile(data = hab_suit.df, aes(x, y, fill = value), alpha = 0.8) +
                 scale_fill_viridis_c("Suitability", option = "magma", limits = c(0,1),
                                      na.value = "transparent") +
-                geom_path(data = state.bounds, aes(long, lat, group = group), color = "black",
-                          size = 1) +
+                geom_sf(data = se, size = 1, color = "black", fill = "transparent") +
+                labs(x = "Longitude", y = "Latitude") +
                 theme_bw() +
                 theme(axis.title = element_text(size = 18),
                       axis.text = element_text(size = 14),
@@ -171,38 +233,39 @@ server <- function(input, output) {
                       legend.title = element_text(size = 14, face = "bold"),
                       legend.text = element_text(size = 12)) +
                 guides(fill = guide_colorbar(barheight = 20)) +
-                coord_quickmap()
+                coord_sf()
         })
 
+    })  #close observeEvent
 
 
-    output$lulcMap <- renderPlot({
 
-        # change to data frame for viz in ggplot
-        lulc.df<- as.data.frame(lulc, xy = TRUE)
-        names(lulc.df)[3]<- "value"
-
-
-        ggplot() +
-            geom_raster(data = lulc.df, aes(x, y, fill = factor(value)), na.rm = TRUE,
-                        alpha = 0.8) +
-            scale_fill_manual("LU/LC",
-                              values = c("darkgreen", "lightblue", "darkred", "lightgreen"),
-                              labels = c("Forest", "Wetland", "Urban", "Grassland", "")) +
-            geom_path(data = state.bounds, aes(long, lat, group = group), color = "black",
-                      size = 1) +
-            theme_bw() +
-            theme(axis.title = element_text(size = 18),
-                  axis.text = element_text(size = 14),
-                  panel.grid = element_blank(),
-                  legend.title = element_text(size = 14, face = "bold"),
-                  legend.text = element_text(size = 12)) +
-            coord_quickmap()
-      })
-
+    output$occ_map <- renderLeaflet({
+      leaflet(options = leafletOptions(preferCanvas = TRUE)) %>%
+        addProviderTiles(providers$Esri.OceanBasemap, group = "Ocean Basemap",
+                         options = tileOptions(continuous_world = F)) %>%
+        addProviderTiles(providers$Esri.WorldImagery, group = "World Imagery",
+                         options = tileOptions(continuous_world = F)) %>%
+        addProviderTiles(providers$OpenStreetMap, group = "Open Street Map",
+                         options = tileOptions(continuous_world = F)) %>%
+        setView(lng = -83, lat = 30, zoom = 6) %>%
+        addMeasure(position = "topleft",
+                   primaryLengthUnit = "kilometers",
+                   primaryAreaUnit = "hectares",
+                   activeColor = "#3D535D",
+                   completedColor = "#7D4479") %>%
+        addScaleBar() %>%
+        addLayersControl(baseGroups = c("World Imagery", "Ocean Basemap", "Open Street Map"),
+                         options = layersControlOptions(collapsed = TRUE)) %>%
+        leaflet.extras::addDrawToolbar(polylineOptions = FALSE,
+                       circleOptions = FALSE,
+                       polygonOptions = TRUE,
+                       markerOptions = FALSE,
+                       circleMarkerOptions = FALSE,
+                       rectangleOptions = FALSE,
+                       singleFeature = FALSE,
+                       editOptions = editToolbarOptions())
     })
-
-
 
 
 }
