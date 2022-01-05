@@ -12,7 +12,27 @@ library(tidyverse)
 library(leaflet)
 library(leaflet.extras)
 library(sf)
-library(shinythemes)
+library(bslib)
+library(googlesheets4)
+library(googledrive)
+library(raster)
+library(rgdal)  #if not included, app doesn't load on shinyapps.io
+
+# load helper functions
+source("utils.R")
+
+options(shiny.trace=TRUE)
+options(shiny.fullstacktrace=FALSE)
+
+
+### Set up OAuth authorization to connect to Google Sheets
+# drive_auth(cache = ".secrets")  #for the first time running the app in R to get the OAuth token
+drive_auth(cache = ".secrets", email = TRUE)
+gs4_auth(token = drive_token())
+
+#get sheet id: as_sheets_id("https://docs.google.com/spreadsheets/d/1BBDaElkbc5hDWrp4WVTF-jkMwmSHNsN8m_UZkSAhdZc/edit?usp=sharing")
+sheet_id <- "1BBDaElkbc5hDWrp4WVTF-jkMwmSHNsN8m_UZkSAhdZc"
+
 
 
 ### Load state boundaries for SE United States
@@ -30,9 +50,23 @@ values(hab_suit)[!is.na(values(lulc))]<- 0.5
 spp_names<- c("Burmese python", "Argentine black and white tegu", "Nile monitor")
 
 
+# Define sliders for habitat suitability map in UI
+hab.id <- c("forest", "wet", "urban", "grass")
+hab.label<- c("Forest", "Wetland", "Urban", "Grassland")
+hab.sliders <- map2(hab.id, hab.label, sliderInput01)
+
+
+# Define raster layer for interactively modifying as part of occupancy;
+#need to convert to web mercator projection for easy interaction w/ leaflet
+empty.rast<- lulc %>%
+  terra::project(., "EPSG:3857", method = "bilinear")
+values(empty.rast)[!is.na(values(empty.rast))]<- 0
+
+
+
 # Define UI for application that draws a histogram
 ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
-                 theme = shinythemes::shinytheme("yeti"),
+                 theme = bs_theme(bootswatch = "yeti", version = 5),
 
 
                  tabPanel("About",
@@ -43,7 +77,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
 
                                      column(width = 8, offset = 2, h4(strong("Information on Invasive Species of Interest"))),
 
-                                     column(width = 8, offset = 2, p(strong("Burmese python")),
+                                     column(width = 8, offset = 2, p(strong(spp_names[1])),
                                             img(src="burmese_python.jpg", align = "center",
                                                 height = 225, width = 300),
                                             br(),
@@ -52,7 +86,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                                             br(),
                                             br(),
 
-                                            p(strong("Argentine black and white tegu")),
+                                            p(strong(spp_names[2])),
                                                    img(src="argentine_bw_tegu.jpg",
                                                        align = "center",
                                                        height = 225, width = 300),
@@ -62,7 +96,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                                             br(),
                                             br(),
 
-                                            p(strong("Nile monitor")),
+                                            p(strong(spp_names[3])),
                                             img(src="nile_monitor.jpg",
                                                 align = "center",
                                                 height = 225, width = 300),
@@ -86,44 +120,20 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                         choices = spp_names,
                         selected = spp_names[1]),
             br(),
-            sliderInput("forest",
-                        "Forest",
-                        min = 0,
-                        max = 1,
-                        value = 0.5,
-                        step = 0.05,
-                        ),
-            sliderInput("wet",
-                        "Wetland",
-                        min = 0,
-                        max = 1,
-                        value = 0.5,
-                        step = 0.05),
-            sliderInput("urban",
-                        "Urban",
-                        min = 0,
-                        max = 1,
-                        value = 0.5,
-                        step = 0.05),
-            sliderInput("grass",
-                        "Grassland",
-                        min = 0,
-                        max = 1,
-                        value = 0.5,
-                        step = 0.05),
+            hab.sliders,  #habitat suitability sliders
             actionButton("update_button",
                          "Update Map",
                          class = "btn-primary"),
-            br(),
-            br(),
-            br(),
-            br(),
+            br(), br(), br(), br(),
             sliderInput("conf_habsuit",
                         "Confidence in Habitat Suitability:",
                         min = 0,
                         max = 1,
                         value = 0.5,
-                        step = 0.25)
+                        step = 0.25),
+            actionButton("habsuit_submit_button",
+                         "Submit Response",
+                         class = "btn-dark")
         ),  #close sidebarPanel
 
         # Show a plot of the generated distribution
@@ -145,17 +155,41 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                              "Select a species",
                              choices = spp_names,
                              selected = spp_names[1]),
-                 br(),
-                 sliderInput("conf_habsuit",
+                 sliderInput("alpha",
+                             "Raster Opacity",
+                             min = 0,
+                             max = 1,
+                             value = 0.5,
+                             step = 0.1),
+                 sliderInput("buff",
+                             "Buffer Size (km)",
+                             min = 5,
+                             max = 100,
+                             value = 20,
+                             step = 1),
+                 sliderInput("intensity",
+                             "Added Intensity Value",
+                             min = 0,
+                             max = 10,
+                             value = 1,
+                             step = 0.5),
+                 actionButton("clear_raster_button",
+                              "Clear Raster",
+                              class = "btn-dark"),
+                 br(), br(), br(), br(),
+                 sliderInput("conf_occ",
                              "Confidence in Occupancy Selection:",
                              min = 0,
                              max = 1,
                              value = 0.5,
-                             step = 0.25)
+                             step = 0.25),
+                 actionButton("occ_submit_button",
+                              "Submit Response",
+                              class = "btn-dark")
                ),  #close sidebarPanel
 
                mainPanel(
-                 leafletOutput("occ_map")
+                 leafletOutput("occmap", height = "100%", width = "100%")
                )  #close mainPanel
              )  #close sidebarLayout
              )  #close "Step 2" tabPanel
@@ -164,8 +198,49 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
 
 
 
-# Define server logic required to draw a histogram
+# Define server
 server <- function(input, output) {
+
+
+  ####################################
+  ### Code for Habitat Suitability ###
+  ####################################
+
+
+  # Create modal pop-up for entering name
+  popupModal <- function(failed = FALSE) {
+    modalDialog(
+      textInput("name", "Enter your name"),
+      if (failed)
+        div(tags$b("You did not input anything", style = "color: red;")),
+
+      footer = tagList(
+        actionButton("ok", "OK")
+      )
+    )
+  }
+
+  # Create modal pop-up for confirmation of submission
+  submitModal <- function() {
+    modalDialog(
+      h3("Your response has been submitted")
+    )
+  }
+
+  # Show modal when button is clicked.
+  showModal(popupModal())
+
+  # Action for closing modal dialog box
+  observeEvent(input$ok, {
+
+    if (!is.null(input$name) && nzchar(input$name)) {
+      removeModal()
+    } else {
+      showModal(popupModal(failed = TRUE))
+    }
+  })
+
+
 
   output$lulcMap <- renderPlot({
 
@@ -193,30 +268,36 @@ server <- function(input, output) {
 
     ### Adjust habitat suitability based on sliders
 
-    observeEvent(input$update_button, {
+
+  hab_suit.update<- eventReactive(input$update_button, {  #create reactive update suitability raster
 
     #Forest
-        ind.forest<- which(values(lulc) == 1)
-        values(hab_suit)[ind.forest]<- input$forest
+    ind.forest<- which(values(lulc) == 1)
+    values(hab_suit)[ind.forest]<- input$forest
 
     #Wetland
-        ind.wet<- which(values(lulc) == 2)
-        values(hab_suit)[ind.wet]<- input$wet
+    ind.wet<- which(values(lulc) == 2)
+    values(hab_suit)[ind.wet]<- input$wet
 
     #Urban
-        ind.urban<- which(values(lulc) == 3)
-        values(hab_suit)[ind.urban]<- input$urban
+    ind.urban<- which(values(lulc) == 3)
+    values(hab_suit)[ind.urban]<- input$urban
 
     #Grassland
-        ind.grass<- which(values(lulc) == 4)
-        values(hab_suit)[ind.grass]<- input$grass
+    ind.grass<- which(values(lulc) == 4)
+    values(hab_suit)[ind.grass]<- input$grass
+
+    hab_suit
+
+  })  #close eventReactive
 
 
+        observeEvent(hab_suit.update(), {
 
         output$habitatMap <- renderPlot({
 
             # change to data frame for viz in ggplot
-            hab_suit.df<- as.data.frame(hab_suit, xy = TRUE)
+            hab_suit.df<- as.data.frame(hab_suit.update(), xy = TRUE)
             names(hab_suit.df)[3]<- "value"
 
 
@@ -240,7 +321,59 @@ server <- function(input, output) {
 
 
 
-    output$occ_map <- renderLeaflet({
+        #Collect and export responses
+        observeEvent(input$habsuit_submit_button, {
+
+          habsuit_conf_export<- data.frame(
+            Name = input$name,
+            Species = input$species_habsuit,
+            Suitability_confidence = input$conf_habsuit
+          )
+
+          #Export data to Google Sheets
+          sheet_append(ss = sheet_id,
+                       data = habsuit_conf_export,
+                       sheet = "Suitability")
+
+          #Put data on Google Drive
+          fileName <- paste(gsub(pattern = " ", replacement = "", input$name),
+                            as.Date.character(Sys.time()),
+                            input$species_habsuit,
+                            "habsuit.tif",
+                            sep = "_")
+          # Write the data to a temporary file locally
+          filePath <- file.path(tempdir(), fileName)
+          writeRaster(hab_suit.update(), filename = filePath, overwrite = TRUE)
+          drive_upload(filePath,
+                       path = "Invasive Spp Expert Elicitation Workshop/Habitat Suitability Rasters/")
+
+          #Confirm submission
+
+
+          # Show modal when button is clicked.
+          showModal(submitModal())
+
+        })  #close observeEvent
+
+
+
+
+
+
+
+    #########################################
+    ### Code for Species Occurrence Range ###
+    #########################################
+
+        # Need to convert to 'RasterLayer' to plot w/ Leaflet
+        empty.rast2<- empty.rast %>%
+          raster()
+
+        pal <- leaflet::colorNumeric(viridis::viridis(100, option = 'magma'),
+                                     raster::values(empty.rast2),
+                                     na.color = "transparent")
+
+    output$occmap <- renderLeaflet({
       leaflet(options = leafletOptions(preferCanvas = TRUE)) %>%
         addProviderTiles(providers$Esri.OceanBasemap, group = "Ocean Basemap",
                          options = tileOptions(continuous_world = F)) %>%
@@ -257,15 +390,131 @@ server <- function(input, output) {
         addScaleBar() %>%
         addLayersControl(baseGroups = c("World Imagery", "Ocean Basemap", "Open Street Map"),
                          options = layersControlOptions(collapsed = TRUE)) %>%
-        leaflet.extras::addDrawToolbar(polylineOptions = FALSE,
-                       circleOptions = FALSE,
-                       polygonOptions = TRUE,
-                       markerOptions = FALSE,
-                       circleMarkerOptions = FALSE,
-                       rectangleOptions = FALSE,
-                       singleFeature = FALSE,
-                       editOptions = editToolbarOptions())
+        addRasterImage(empty.rast2, opacity = input$alpha, project = FALSE)
+
     })
+
+
+
+
+          # req(input$occ_startedit_button)
+
+          click.df<- eventReactive(input$occmap_click, {
+
+            data.frame(x = input$occmap_click$lng,
+                       y = input$occmap_click$lat)
+
+          })
+
+          # Check that coordinates are updated properly
+          output$Click_text<-renderText({
+            print(unlist(click.df()))
+          })
+
+
+          # Update selected cells
+          cell.ind<- eventReactive(click.df(), {
+
+            xy<- click.df() %>%
+              st_as_sf(., coords = c("x", "y"), crs = 4326) %>%
+              st_transform(crs = crs(empty.rast)) %>%
+              st_buffer(., input$buff * 1000)
+
+
+            cell.buff.ind<- terra::extract(x = empty.rast, y = vect(xy), cells = TRUE,
+                                           na.rm = TRUE) %>%
+              drop_na()
+
+          })
+
+
+
+          # Update rast.vals each time values are added to new cells
+          rast.vals<- reactiveValues(int = raster::values(empty.rast))
+
+          observeEvent(cell.ind(), {
+
+            rast.vals$int[cell.ind()$cell]<- rast.vals$int[cell.ind()$cell] + input$intensity
+
+          })
+
+
+          # Update raster layer w/ values from rast.vals
+          occ.rast<- reactive({
+
+            occ.rast1<- empty.rast %>%
+              raster()
+            raster::values(occ.rast1)<- rast.vals$int
+
+            occ.rast1
+          })
+
+
+          # Allow raster to be cleared by action button or changing species selection
+          observeEvent(list(input$clear_raster_button, input$species_occ), {
+
+            rast.vals$int<- raster::values(empty.rast)
+
+          })
+
+
+
+            ## Update raster layer on map
+            observe({
+              req(occ.rast())
+              occ.rast2<- occ.rast()
+
+              pal <- leaflet::colorNumeric(viridis::viridis(100, option = 'magma'),
+                                           raster::values(occ.rast2),
+                                           na.color = "transparent")
+
+
+
+            leafletProxy("occmap") %>%
+              clearImages() %>%
+              clearControls() %>%
+              addRasterImage(occ.rast2, colors = pal, opacity = input$alpha, project = FALSE) %>%
+              addLegend_decreasing(pal = pal,
+                        values = raster::values(occ.rast2),
+                        title = "Intensity",
+                        decreasing = TRUE)
+
+        })
+
+
+    #Collect and export responses
+        observeEvent(input$occ_submit_button, {
+
+          occ_conf_export<- data.frame(
+            Name = input$name,
+            Species = input$species_occ,
+            Suitability_confidence = input$conf_occ
+          )
+
+          #Export data to Google Sheets
+          sheet_append(ss = sheet_id,
+                       data = occ_conf_export,
+                       sheet = "Range")
+
+          #Put data on Google Drive
+          fileName <- paste(gsub(pattern = " ", replacement = "", input$name),
+                            as.Date.character(Sys.time()),
+                            input$species_occ,
+                            "occ.tif",
+                            sep = "_")
+          #Write the data to a temporary file locally
+          filePath <- file.path(tempdir(), fileName)
+          writeRaster(occ.rast(), filename = filePath, overwrite = TRUE)
+          drive_upload(filePath,
+                       path = "Invasive Spp Expert Elicitation Workshop/Occupancy Rasters/")
+
+          #Confirm submission
+
+
+          # Show modal when button is clicked.
+          showModal(submitModal())
+
+        })  #close observeEvent
 
 
 }
