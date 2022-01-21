@@ -75,6 +75,12 @@ empty.rast<- lulc %>%
 terra::values(empty.rast)[!is.na(terra::values(empty.rast))]<- 0
 
 
+# Define possible tile sources to choose from in Leaflet
+tile.sources <- c("Esri.WorldImagery",
+                  "Esri.OceanBasemap",
+                  "OpenStreetMap")
+
+
 
 # Define UI for application
 ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
@@ -167,6 +173,9 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                              "Select a species",
                              choices = spp_names,
                              selected = spp_names[1]),
+                 selectInput("tiles",
+                             "Basemap",
+                             tile.sources),
                  radioButtons("radio",
                               "Time Period",
                               choices = c("Current", "Future"),
@@ -394,14 +403,18 @@ server <- function(input, output) {
                                      raster::values(empty.rast2),
                                      na.color = "transparent")
 
+        selectedTiles <- reactive({
+          input$tiles
+        })
+
+
     output$occmap <- renderLeaflet({
       leaflet(options = leafletOptions(preferCanvas = TRUE)) %>%
-        addProviderTiles(providers$Esri.OceanBasemap, group = "Ocean Basemap",
-                         options = tileOptions(continuous_world = F)) %>%
-        addProviderTiles(providers$Esri.WorldImagery, group = "World Imagery",
-                         options = tileOptions(continuous_world = F)) %>%
-        addProviderTiles(providers$OpenStreetMap, group = "Open Street Map",
-                         options = tileOptions(continuous_world = F)) %>%
+        addProviderTiles(selectedTiles(), options = tileOptions(continuous_world = F)) %>%
+        # addProviderTiles(providers$Esri.WorldImagery, group = "World Imagery",
+        #                  options = tileOptions(continuous_world = F)) %>%
+        # addProviderTiles(providers$OpenStreetMap, group = "Open Street Map",
+        #                  options = tileOptions(continuous_world = F)) %>%
         setView(lng = -83, lat = 30, zoom = 6) %>%
         addMeasure(position = "topleft",
                    primaryLengthUnit = "kilometers",
@@ -409,8 +422,8 @@ server <- function(input, output) {
                    activeColor = "#3D535D",
                    completedColor = "#7D4479") %>%
         addScaleBar() %>%
-        addLayersControl(baseGroups = c("World Imagery", "Ocean Basemap", "Open Street Map"),
-                         options = layersControlOptions(collapsed = TRUE)) %>%
+        # addLayersControl(baseGroups = c("World Imagery", "Ocean Basemap", "Open Street Map"),
+        #                  options = layersControlOptions(collapsed = TRUE)) %>%
         addRasterImage(empty.rast2, opacity = input$alpha, project = FALSE)
 
     })
@@ -494,6 +507,8 @@ server <- function(input, output) {
             leafletProxy("occmap") %>%
               clearImages() %>%
               clearControls() %>%
+              clearTiles() %>%
+              addProviderTiles(selectedTiles(), options = tileOptions(continuous_world = F)) %>%
               addRasterImage(occ.rast2, colors = pal, opacity = input$alpha, project = FALSE) %>%
               addLegend_decreasing(pal = pal,
                         values = raster::values(occ.rast2),
