@@ -10,19 +10,20 @@ library(shiny)
 library(terra)  #in place of {raster}
 library(tidyverse)
 library(leaflet)
-library(leaflet.extras)
+library(leaflet.extras)  #do I still need this?
 library(sf)
 library(bslib)
 library(googlesheets4)
 library(googledrive)
 library(raster)
 library(rgdal)  #if not included, app doesn't load on shinyapps.io
+library(janitor)
 
 # load helper functions
 source("utils.R")
 
-options(shiny.trace=TRUE)
-options(shiny.fullstacktrace=FALSE)
+options(shiny.trace=FALSE)
+options(shiny.fullstacktrace=TRUE)
 
 
 ### Set up OAuth authorization to connect to Google Sheets
@@ -36,23 +37,34 @@ sheet_id <- "1BBDaElkbc5hDWrp4WVTF-jkMwmSHNsN8m_UZkSAhdZc"
 
 
 ### Load state boundaries for SE United States
-se <- st_read("state_bounds.shp", crs = 4326, quiet = TRUE)
+
+# CRS for NLCD data and state boundaries
+crs <- "+proj=aea +lat_0=23 +lon_0=-96 +lat_1=29.5 +lat_2=45.5 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
+
+se <- st_read("state_bounds.shp", crs = crs, quiet = TRUE)
 
 
-### Load fake LU/LC raster
-lulc<- rast("fake_lulc.tif")
+### Load NLCD raster and metadata
+lulc<- rast("NLCD_data.tif")
+nlcd_data<- read.csv("NLCD_metadata.csv")
 
 ### Create new raster for displaying habitat suitability
 hab_suit<- lulc
 values(hab_suit)[!is.na(values(lulc))]<- 0.5
 
 
+### Classify NLCD raster (as factor)
+# levs<- left_join(terra::cats(lulc, 1), nlcd_data, by = 'ID')
+# levels(lulc) <- levs
+names(lulc) <- "nlcd"
+
+
 spp_names<- c("Burmese python", "Argentine black and white tegu", "Nile monitor")
 
 
 # Define sliders for habitat suitability map in UI
-hab.id <- c("forest", "wet", "urban", "grass")
-hab.label<- c("Forest", "Wetland", "Urban", "Grassland")
+hab.id <- janitor::make_clean_names(nlcd_data$Class)
+hab.label<- nlcd_data$Class
 hab.sliders <- map2(hab.id, hab.label, sliderInput01)
 
 
@@ -60,11 +72,11 @@ hab.sliders <- map2(hab.id, hab.label, sliderInput01)
 #need to convert to web mercator projection for easy interaction w/ leaflet
 empty.rast<- lulc %>%
   terra::project(., "EPSG:3857", method = "bilinear")
-values(empty.rast)[!is.na(values(empty.rast))]<- 0
+terra::values(empty.rast)[!is.na(terra::values(empty.rast))]<- 0
 
 
 
-# Define UI for application that draws a histogram
+# Define UI for application
 ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                  theme = bs_theme(bootswatch = "yeti", version = 5),
 
@@ -155,6 +167,10 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                              "Select a species",
                              choices = spp_names,
                              selected = spp_names[1]),
+                 radioButtons("radio",
+                              "Time Period",
+                              choices = c("Current", "Future"),
+                              selected = "Current"),
                  sliderInput("alpha",
                              "Raster Opacity",
                              min = 0,
@@ -169,7 +185,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                              step = 1),
                  sliderInput("intensity",
                              "Added Intensity Value",
-                             min = 0,
+                             min = -2,
                              max = 10,
                              value = 1,
                              step = 0.5),
@@ -210,9 +226,9 @@ server <- function(input, output) {
   # Create modal pop-up for entering name
   popupModal <- function(failed = FALSE) {
     modalDialog(
-      textInput("name", "Enter your name"),
+      textInput("name", "Please enter your full name"),
       if (failed)
-        div(tags$b("You did not input anything", style = "color: red;")),
+        div(tags$b("Your name is required", style = "color: red;")),
 
       footer = tagList(
         actionButton("ok", "OK")
@@ -246,16 +262,25 @@ server <- function(input, output) {
 
     # change to data frame for viz in ggplot
     lulc.df<- as.data.frame(lulc, xy = TRUE)
-    names(lulc.df)[3]<- "value"
+
+
+    # change col name and class in nlcd_data for df merge
+    names(nlcd_data)[1]<- "nlcd"
+    nlcd_data$nlcd<- factor(nlcd_data$nlcd)
+
+    # Add land cover name to lulc.df
+    lulc.df<- left_join(lulc.df, nlcd_data[,1:2], by = 'nlcd')
+    # names(lulc.df)[3]<- "value"
+
 
 
     ggplot() +
-      geom_tile(data = lulc.df, aes(x, y, fill = factor(value)), na.rm = TRUE,
+      geom_tile(data = lulc.df, aes(x, y, fill = nlcd), na.rm = TRUE,
                   alpha = 0.8) +
       scale_fill_manual("LU/LC",
-                        values = c("darkgreen", "lightblue", "darkred", "lightgreen"),
-                        labels = c("Forest", "Wetland", "Urban", "Grassland", "")) +
-      geom_sf(data = se, size = 1, color = "black", fill = "transparent") +
+                        values = nlcd_data$Color,
+                        labels = nlcd_data$Class) +
+      geom_sf(data = se, size = 0.75, color = "black", fill = "transparent") +
       labs(x = "Longitude", y = "Latitude") +
       theme_bw() +
       theme(axis.title = element_text(size = 18),
@@ -271,23 +296,9 @@ server <- function(input, output) {
 
   hab_suit.update<- eventReactive(input$update_button, {  #create reactive update suitability raster
 
-    #Forest
-    ind.forest<- which(values(lulc) == 1)
-    values(hab_suit)[ind.forest]<- input$forest
-
-    #Wetland
-    ind.wet<- which(values(lulc) == 2)
-    values(hab_suit)[ind.wet]<- input$wet
-
-    #Urban
-    ind.urban<- which(values(lulc) == 3)
-    values(hab_suit)[ind.urban]<- input$urban
-
-    #Grassland
-    ind.grass<- which(values(lulc) == 4)
-    values(hab_suit)[ind.grass]<- input$grass
-
-    hab_suit
+    # Use function to update all of these iteratively
+    habsuit_update_fun(id = nlcd_data$ID, lab = hab.id, lulc = lulc, hab_suit = hab_suit,
+                       input1 = input)
 
   })  #close eventReactive
 
@@ -305,7 +316,7 @@ server <- function(input, output) {
                 geom_tile(data = hab_suit.df, aes(x, y, fill = value), alpha = 0.8) +
                 scale_fill_viridis_c("Suitability", option = "magma", limits = c(0,1),
                                      na.value = "transparent") +
-                geom_sf(data = se, size = 1, color = "black", fill = "transparent") +
+                geom_sf(data = se, size = 0.75, color = "black", fill = "transparent") +
                 labs(x = "Longitude", y = "Latitude") +
                 theme_bw() +
                 theme(axis.title = element_text(size = 18),
@@ -321,7 +332,17 @@ server <- function(input, output) {
 
 
 
-        #Collect and export responses
+    ### Reset habitat suitability sliders/raster when changing species selection
+
+        observeEvent(input$species_habsuit, {
+
+          map(hab.id, updateSliderInput01)
+
+        })
+
+
+
+        ### Collect and export responses
         observeEvent(input$habsuit_submit_button, {
 
           habsuit_conf_export<- data.frame(
@@ -488,7 +509,8 @@ server <- function(input, output) {
           occ_conf_export<- data.frame(
             Name = input$name,
             Species = input$species_occ,
-            Suitability_confidence = input$conf_occ
+            Suitability_confidence = input$conf_occ,
+            Time_Period = input$radio
           )
 
           #Export data to Google Sheets
@@ -500,6 +522,7 @@ server <- function(input, output) {
           fileName <- paste(gsub(pattern = " ", replacement = "", input$name),
                             as.Date.character(Sys.time()),
                             input$species_occ,
+                            input$radio,
                             "occ.tif",
                             sep = "_")
           #Write the data to a temporary file locally

@@ -4,8 +4,31 @@ sliderInput01 <- function(id, lab) {
   sliderInput(inputId = id, label = lab, min = 0, max = 1, value = 0.5, step = 0.05)
 }
 
+#----------------------------------------
+
+# Function to reset sliders for habitat suitability tab when changing species
+updateSliderInput01 <- function(id) {
+  updateSliderInput(inputId = id, value = 0.5)
+}
+
+#----------------------------------------
+
+# Function to update the habitat suitability raster after adjusting the sliders
+habsuit_update_fun <- function(id, lab, lulc, hab_suit, input1) {
+
+  for (i in 1:length(id)) {
+
+  tmp<- lab[i]
+  ind<- which(terra::values(lulc) == id[i])
+  terra::values(hab_suit)[ind]<- input1[[tmp]]
+
+  }
+
+  hab_suit
+}
 
 
+#----------------------------------------
 
 # Function that modifies existing leaflet::addLegend by adding an option for decreasing order
 addLegend_decreasing <- function (map,
