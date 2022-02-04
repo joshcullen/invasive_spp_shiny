@@ -76,7 +76,7 @@ terra::values(empty.rast)[!is.na(terra::values(empty.rast))]<- 0
 
 
 # Define UI for application
-ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
+ui <- navbarPage("Expert Elicitation of Invasive Species",
                  theme = bs_theme(bootswatch = "yeti", version = 5),
 
 
@@ -144,7 +144,13 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                                           step = 0.25),
                               actionButton("habsuit_submit_button",
                                            "Submit Response",
-                                           class = "btn-dark")
+                                           class = "btn-dark"),
+
+                              tags$script("
+    Shiny.addCustomMessageHandler('resetValue', function(variableName) {
+      Shiny.onInputChange(variableName, null);
+    });
+  ")  #for resetting input values to NULL (specifically for input$update_button)
                             ),  #close sidebarPanel
 
                             # Show a plot of the generated distribution
@@ -168,7 +174,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                                           selected = spp_names[1]),
                               radioButtons("radio",
                                            "Time Period",
-                                           choices = c("Current", "Future"),
+                                           choices = c("Current", "Future (2050)"),
                                            selected = "Current"),
                               sliderInput("alpha",
                                           "Raster Opacity",
@@ -177,14 +183,14 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
                                           value = 0.5,
                                           step = 0.1),
                               sliderInput("buff",
-                                          "Buffer Size (km)",
+                                          "Buffer Radius Size (km)",
                                           min = 5,
                                           max = 100,
                                           value = 20,
                                           step = 1),
                               sliderInput("intensity",
                                           "Added Intensity Value",
-                                          min = -2,
+                                          min = -10,
                                           max = 10,
                                           value = 1,
                                           step = 0.5),
@@ -214,7 +220,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species Habitat Suitability",
 
 
 # Define server
-server <- function(input, output) {
+server <- function(input, output, session) {
 
 
   ####################################
@@ -239,6 +245,17 @@ server <- function(input, output) {
   submitModal <- function() {
     modalDialog(
       h3("Your response has been submitted")
+    )
+  }
+
+  failedSubmitModal <- function() {
+    modalDialog(
+      div(tags$b("You must first update the map by clicking the 'Update Map' button.",
+      style = "color: red;")),
+
+      footer = tagList(
+        actionButton("ok", "OK")
+      )
     )
   }
 
@@ -293,7 +310,7 @@ server <- function(input, output) {
   ### Adjust habitat suitability based on sliders
 
 
-  hab_suit.update<- eventReactive(input$update_button, {  #create reactive update suitability raster
+  hab_suit.update<- reactive({  #create reactive update suitability raster
 
     # Use function to update all of these iteratively
     habsuit_update_fun(id = nlcd_data$ID, lab = hab.id, lulc = lulc, hab_suit = hab_suit,
@@ -302,13 +319,18 @@ server <- function(input, output) {
   })  #close eventReactive
 
 
-  observeEvent(hab_suit.update(), {
+  observeEvent(input$update_button, {
 
     output$habitatMap <- renderPlot({
 
       # change to data frame for viz in ggplot
-      hab_suit.df<- as.data.frame(hab_suit.update(), xy = TRUE)
-      names(hab_suit.df)[3]<- "value"
+      if (is.null(input$update_button)) {
+        hab_suit.df<- as.data.frame(hab_suit, xy = TRUE)  #plots 'null' map
+        names(hab_suit.df)[3]<- "value"
+      } else {
+        hab_suit.df<- as.data.frame(hab_suit.update(), xy = TRUE)  #plots user updated map
+        names(hab_suit.df)[3]<- "value"
+      }
 
 
       ggplot() +
@@ -336,6 +358,7 @@ server <- function(input, output) {
   observeEvent(input$species_habsuit, {
 
     map(hab.id, updateSliderInput01)
+    session$sendCustomMessage(type = "resetValue", message = "update_button")
 
   })
 
@@ -343,6 +366,12 @@ server <- function(input, output) {
 
   ### Collect and export responses
   observeEvent(input$habsuit_submit_button, {
+
+    if (!isTruthy(input$update_button)) {
+
+      showModal(failedSubmitModal())
+
+    } else {
 
     habsuit_conf_export<- data.frame(
       Name = input$name,
@@ -373,6 +402,8 @@ server <- function(input, output) {
     # Show modal when button is clicked.
     showModal(submitModal())
 
+    } #close if-else statement
+
   })  #close observeEvent
 
 
@@ -394,7 +425,7 @@ server <- function(input, output) {
                                na.color = "transparent")
 
   output$occmap <- renderLeaflet({
-    leaflet(options = leafletOptions(preferCanvas = TRUE)) %>%
+    leaflet(options = leafletOptions(preferCanvas = TRUE, doubleClickZoom = FALSE)) %>%
       addProviderTiles(providers$Esri.OceanBasemap, group = "Ocean Basemap",
                        options = tileOptions(continuous_world = F, zIndex = -10)) %>%
       addProviderTiles(providers$Esri.WorldImagery, group = "World Imagery",
