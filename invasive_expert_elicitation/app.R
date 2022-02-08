@@ -86,35 +86,26 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                             column(width = 8, offset = 2, p("As part of this expert elicitation, participants will first select the species on which they have expertise in the section below before proceeding to the next steps. These subsequent step will allow participants to first consider the influence of land cover on invasive species connectivity and habitat suitability. Additionally, participants will also be asked to self-assess their confidence in the spatial prediction they have made for each of the selected species before submitting their results. These results will then be used in the following days of the workshop.")
                             ),  #close column for text paragraph,
 
-                            column(width = 8, offset = 2, h4(strong("Information on Invasive Species of Interest"))),
+                            column(width = 8, offset = 2, h4(strong("Invasive species of interest"))),
 
-                            column(width = 8, offset = 2, p(strong(spp_names[1])),
-                                   img(src="burmese_python.jpg", align = "center",
-                                       height = 225, width = 300),
-                                   br(),
-                                   br(),
-                                   p("Burmese pythons ",em("(Python bivittatus)")," are large constrictors native to Southeast Asia. It’s native range is broad and whilst it can survive in a variety of habitats, it has preferences for wetland, swamp, and other aquatic systems. Despite this, as with other large constrictors, it is also arboreal. They reach in excess of 85m in length, meaning in their introduced range they encounter few natural predators. They are reported to have become established in the USA in 2000 (Harvey et al. 2016), but have been spotted intermittently for 20 years prior.  and  The total ecological impact of Burmese is difficult to characterize, however they are known to prey on a range of native fauna, including many native mammals (Dorcas et al. 2012)."),
-                                   br(),
-                                   br(),
+                            column(width = 5, offset = 1, p(strong(spp_names[1])),
+                                   style='padding-left:0px; padding-right:0px; padding-top:0px; padding-bottom:40px',  #to add extra space under image
+                                   img(src="burmese_python.jpg",
+                                       width = "90%"
+                                       )),
 
-                                   p(strong(spp_names[2])),
+                            column(width = 5, p(strong(spp_names[2])),
+                                   style='padding-left:0px; padding-right:0px; padding-top:0px; padding-bottom:40px',
                                    img(src="argentine_bw_tegu.jpg",
-                                       align = "center",
-                                       height = 225, width = 300),
-                                   br(),
-                                   br(),
-                                   p("The Argentine black and white tegu", em("(Salvator merianae)"), "is the largest member of the genus of tegus, Salvator. They are native to large parts of central and southern South America. Their broad habitat plasticity, and diverse diet allow make them to excellent at adapting  to new ecotypes and make them superior invaders. Behaviors such as burrowing mean that cold winters may not necessarily restrict invasive expansion across the US."),
-                                   br(),
-                                   br(),
+                                       width = "90%"
+                                       )),
 
-                                   p(strong(spp_names[3])),
+                            column(width = 5, offset = 1, p(strong(spp_names[3])),
+                                   style='padding-left:0px; padding-right:0px; padding-top:0px; padding-bottom:40px',
                                    img(src="nile_monitor.jpg",
-                                       align = "center",
-                                       height = 225, width = 300),
-                                   br(),
-                                   br(),
-                                   p("Nile monitors", em("(Varanus niloticus)"), "native to Africa, are the largest species of the monitor lizard family, Varanidae family--, a family where body mass varies by five full orders of magnitude. It has a broad distribution, occurring across much of Africa, suggesting low . The specificity plasticity in ecosystem requirements, a hallmark of  means that it has a high invasive potential. In addition to this, Nile monitors have very broad diets, threatening a range of native fauna, within the US.")
-                            ),  #close column() for text
+                                       width = "90%"
+                                       ))
+                            # ),  #close column() for text
                           )  #close fluidRow
                  ),  #close "About" tabPanel
 
@@ -133,7 +124,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                               br(),
                               hab.sliders,  #habitat suitability sliders
                               actionButton("update_button",
-                                           "Update Map",
+                                           "Update Suitability",
                                            class = "btn-primary"),
                               br(), br(), br(), br(),
                               sliderInput("conf_habsuit",
@@ -190,10 +181,10 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                           step = 1),
                               sliderInput("intensity",
                                           "Added Intensity Value",
-                                          min = -10,
-                                          max = 10,
-                                          value = 1,
-                                          step = 0.5),
+                                          min = -0.5,
+                                          max = 1,
+                                          value = 0.1,
+                                          step = 0.05),
                               actionButton("clear_raster_button",
                                            "Clear Raster",
                                            class = "btn-dark"),
@@ -250,7 +241,7 @@ server <- function(input, output, session) {
 
   failedSubmitModal <- function() {
     modalDialog(
-      div(tags$b("You must first update the map by clicking the 'Update Map' button.",
+      div(tags$b("You must first update the map by clicking the 'Update Suitability' button.",
       style = "color: red;")),
 
       footer = tagList(
@@ -488,6 +479,10 @@ server <- function(input, output, session) {
 
     rast.vals$int[cell.ind()$cell]<- rast.vals$int[cell.ind()$cell] + input$intensity
 
+    #set min (0) and max(1) values possible for raster
+    rast.vals$int<- ifelse(rast.vals$int < 0, 0,
+                           ifelse(rast.vals$int > 1, 1, rast.vals$int))
+
   })
 
 
@@ -517,7 +512,7 @@ server <- function(input, output, session) {
     occ.rast2<- occ.rast()
 
     pal <- leaflet::colorNumeric(viridis::viridis(100, option = 'magma'),
-                                 raster::values(occ.rast2),
+                                 c(0,1),
                                  na.color = "transparent")
 
 
@@ -528,7 +523,7 @@ server <- function(input, output, session) {
       addRasterImage(occ.rast2, colors = pal, opacity = input$alpha, project = FALSE,
                      group = "Occupancy") %>%
       addLegend_decreasing(pal = pal,
-                           values = raster::values(occ.rast2),
+                           values = c(0,1),
                            title = "Intensity",
                            decreasing = TRUE)
 
