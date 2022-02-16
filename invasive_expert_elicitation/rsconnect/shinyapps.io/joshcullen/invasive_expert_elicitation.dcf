@@ -5,9 +5,10 @@ account: joshcullen
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 4880018
-bundleId: 5556915
+bundleId: 5587082
 url: https://joshcullen.shinyapps.io/invasive_expert_elicitation/
-when: 1644331823.24444
+when: 1645041439.8289
+lastSyncTime: 1645041439.82891
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: fake_lulc.tif

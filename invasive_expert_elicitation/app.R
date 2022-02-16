@@ -52,13 +52,15 @@ hab_suit<- lulc
 values(hab_suit)[!is.na(values(lulc))]<- 0.5
 
 
-### Classify NLCD raster (as factor)
-# levs<- left_join(terra::cats(lulc, 1), nlcd_data, by = 'ID')
-# levels(lulc) <- levs
+# Rename NLCD layer
 names(lulc) <- "nlcd"
 
 
-spp_names<- c("Burmese python", "Argentine black and white tegu", "Nile monitor")
+spp_names<- c("Burmese python", "Argentine black and white tegu", "Nile monitor", "African rock python", "Green iguana",
+              "Black spiny-tailed iguana", "Spectacled caiman", "Yellow anaconda", "Cuban tree frog", "Wild boar",
+              "Reticulated python", "Boa constrictor", "Asian water monitor", "Mexican spiny-tailed iguana", "Red tegu",
+              "Ball python", "Cane toad", "Brown basilisk", "Green anaconda", "Muscovy duck") %>%
+  sort()
 
 
 # Define sliders for habitat suitability map in UI
@@ -88,24 +90,8 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
 
                             column(width = 8, offset = 2, h4(strong("Invasive species of interest"))),
 
-                            column(width = 5, offset = 1, p(strong(spp_names[1])),
-                                   style='padding-left:0px; padding-right:0px; padding-top:0px; padding-bottom:40px',  #to add extra space under image
-                                   img(src="burmese_python.jpg",
-                                       width = "90%"
-                                       )),
+                            purrr::map2(spp_names, list.files(path = "./www"), insertSppPhoto)  #insert spp photos and common names
 
-                            column(width = 5, p(strong(spp_names[2])),
-                                   style='padding-left:0px; padding-right:0px; padding-top:0px; padding-bottom:40px',
-                                   img(src="argentine_bw_tegu.jpg",
-                                       width = "90%"
-                                       )),
-
-                            column(width = 5, offset = 1, p(strong(spp_names[3])),
-                                   style='padding-left:0px; padding-right:0px; padding-top:0px; padding-bottom:40px',
-                                   img(src="nile_monitor.jpg",
-                                       width = "90%"
-                                       ))
-                            # ),  #close column() for text
                           )  #close fluidRow
                  ),  #close "About" tabPanel
 

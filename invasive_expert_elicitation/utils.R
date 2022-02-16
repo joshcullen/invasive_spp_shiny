@@ -1,4 +1,17 @@
 
+# Function to add species photos and common names to UI
+
+insertSppPhoto <- function(lab, photo_path) {
+  column(width = 5,
+         offset = 1,
+         p(strong(lab[1])),
+         style = 'padding-left:0px; padding-right:0px; padding-top:0px; padding-bottom:40px',  #to add extra space under image
+         img(src = photo_path, width = "90%")
+         )
+}
+
+#----------------------------------------
+
 # Function to generate sliders for creating habitat suitability map
 sliderInput01 <- function(id, lab) {
   sliderInput(inputId = id, label = lab, min = 0, max = 1, value = 0.5, step = 0.05)
