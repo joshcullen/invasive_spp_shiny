@@ -56,11 +56,28 @@ values(hab_suit)[!is.na(values(lulc))]<- 0.5
 names(lulc) <- "nlcd"
 
 
+# Spp names sorted for "About" page
 spp_names<- c("Burmese python", "Argentine black and white tegu", "Nile monitor", "African rock python", "Green iguana",
               "Black spiny-tailed iguana", "Spectacled caiman", "Yellow anaconda", "Cuban tree frog", "Wild boar",
               "Reticulated python", "Boa constrictor", "Asian water monitor", "Mexican spiny-tailed iguana", "Red tegu",
               "Ball python", "Cane toad", "Brown basilisk", "Green anaconda", "Muscovy duck") %>%
   sort()
+
+# Spp names for "main" spp of interest
+spp_main <- c("Burmese python", "Argentine black and white tegu", "Nile monitor", "Green iguana", "Black spiny-tailed iguana",
+              "Cuban tree frog", "Cane toad", "Red tegu", "Ball python", "Reticulated python", "American crocodile")
+
+# Spp names randomized for use in app
+spp_main_rand <- sample(spp_main, length(spp_main), replace = FALSE)
+
+
+# Spp names for "extra" spp of interest
+spp_extra <- c("African rock python", "Spectacled caiman", "Yellow anaconda", "Wild boar", "Boa constrictor", "Asian water monitor",
+               "Mexican spiny-tailed iguana", "Brown basilisk", "Green anaconda", "Muscovy duck", "Nutria", "Egyptian Goose",
+               "Rhesus macaque", "Gopher tortoise", "Florida scrubjay")
+
+# Spp names randomized for use in app
+spp_extra_rand <- sample(spp_extra, length(spp_extra), replace = FALSE)
 
 
 # Define sliders for habitat suitability map in UI
@@ -105,8 +122,8 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                               h4("Expected Suitability of Land Cover"),
                               selectInput("species_habsuit",
                                           "Select a species",
-                                          choices = spp_names,
-                                          selected = spp_names[1]),
+                                          choices = spp_main_rand,
+                                          selected = spp_main_rand[1]),
                               br(),
                               hab.sliders,  #habitat suitability sliders
                               actionButton("update_button",
@@ -147,8 +164,8 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                               h4("Likelihood of Occupancy"),
                               selectInput("species_occ",
                                           "Select a species",
-                                          choices = spp_names,
-                                          selected = spp_names[1]),
+                                          choices = spp_main_rand,
+                                          selected = spp_main_rand[1]),
                               radioButtons("radio",
                                            "Time Period",
                                            choices = c("Current", "Future (2050)"),
