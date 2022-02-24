@@ -366,7 +366,7 @@ server <- function(input, output, session) {
 
   ### Reset habitat suitability sliders/raster when changing species selection
 
-  observeEvent(input$species_habsuit, {
+  observeEvent(input$dynamic1, {
 
     map(hab.id, updateSliderInput01)
     session$sendCustomMessage(type = "resetValue", message = "update_button")
@@ -536,7 +536,7 @@ server <- function(input, output, session) {
 
 
   # Allow raster to be cleared by action button or changing species selection
-  observeEvent(list(input$clear_raster_button, input$species_occ), {
+  observeEvent(list(input$clear_raster_button, input$dynamic2), {
 
     rast.vals$int<- raster::values(empty.rast)
 
