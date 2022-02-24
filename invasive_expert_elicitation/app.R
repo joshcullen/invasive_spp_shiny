@@ -386,7 +386,7 @@ server <- function(input, output, session) {
 
     habsuit_conf_export<- data.frame(
       Name = input$name,
-      Species = input$species_habsuit,
+      Species = input$dynamic1,
       Suitability_confidence = input$conf_habsuit
     )
 
@@ -398,7 +398,7 @@ server <- function(input, output, session) {
     #Put data on Google Drive
     fileName <- paste(gsub(pattern = " ", replacement = "", input$name),
                       as.Date.character(Sys.time()),
-                      input$species_habsuit,
+                      input$dynamic1,
                       "habsuit.tif",
                       sep = "_")
     # Write the data to a temporary file locally
@@ -573,7 +573,7 @@ server <- function(input, output, session) {
 
     occ_conf_export<- data.frame(
       Name = input$name,
-      Species = input$species_occ,
+      Species = input$dynamic2,
       Suitability_confidence = input$conf_occ,
       Time_Period = input$radio
     )
@@ -586,7 +586,7 @@ server <- function(input, output, session) {
     #Put data on Google Drive
     fileName <- paste(gsub(pattern = " ", replacement = "", input$name),
                       as.Date.character(Sys.time()),
-                      input$species_occ,
+                      input$dynamic2,
                       input$radio,
                       "occ.tif",
                       sep = "_")
