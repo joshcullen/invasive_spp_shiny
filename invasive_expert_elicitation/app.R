@@ -120,10 +120,11 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                           sidebarLayout(
                             sidebarPanel(
                               h4("Expected Suitability of Land Cover"),
-                              selectInput("species_habsuit",
-                                          "Select a species",
-                                          choices = spp_main_rand,
-                                          selected = spp_main_rand[1]),
+                              radioButtons("spp_type_habsuit",  #radio button to choose whether "main" or "extra" species
+                                           "Species Category",
+                                           choices = c("main", "extra"),
+                                           selected = "main"),
+                              uiOutput("species_habsuit"),  #dynamically updated dropdown of spp names
                               br(),
                               hab.sliders,  #habitat suitability sliders
                               actionButton("update_button",
@@ -149,8 +150,8 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
 
                             # Show a plot of the generated distribution
                             mainPanel(
-                              plotOutput("lulcMap"),
-                              plotOutput("habitatMap")
+                              plotOutput("lulcMap", width = "100%", height = "600px"),
+                              plotOutput("habitatMap", width = "100%", height = "600px")
                             )  #close mainPanel
                           )  #close sidebarLayout
                  ),  #close "Step 1" tabPanel
@@ -162,10 +163,11 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                           sidebarLayout(
                             sidebarPanel(
                               h4("Likelihood of Occupancy"),
-                              selectInput("species_occ",
-                                          "Select a species",
-                                          choices = spp_main_rand,
-                                          selected = spp_main_rand[1]),
+                              radioButtons("spp_type_occ",  #radio button to choose whether "main" or "extra" species
+                                           "Species Category",
+                                           choices = c("main", "extra"),
+                                           selected = "main"),
+                              uiOutput("species_occ"),  #dynamically updated dropdown of spp names
                               radioButtons("radio",
                                            "Time Period",
                                            choices = c("Current", "Future (2050)"),
@@ -220,6 +222,21 @@ server <- function(input, output, session) {
   ####################################
   ### Code for Habitat Suitability ###
   ####################################
+
+  # create dynamic UI for spp dropdown menu
+  output$species_habsuit <- renderUI({
+    if (input$spp_type_habsuit == "main") {
+      selectInput("dynamic1",
+                  "Select a species",
+                  choices = spp_main_rand,
+                  selected = spp_main_rand[1])
+    } else {
+      selectInput("dynamic1",
+                  "Select a species",
+                  choices = spp_extra_rand,
+                  selected = spp_extra_rand[1])
+    }
+  })
 
 
   # Create modal pop-up for entering name
@@ -409,6 +426,24 @@ server <- function(input, output, session) {
   #########################################
   ### Code for Species Occurrence Range ###
   #########################################
+
+
+  # create dynamic UI for spp dropdown menu
+  output$species_occ <- renderUI({
+    if (input$spp_type_occ == "main") {
+      selectInput("dynamic2",
+                  "Select a species",
+                  choices = spp_main_rand,
+                  selected = spp_main_rand[1])
+    } else {
+      selectInput("dynamic2",
+                  "Select a species",
+                  choices = spp_extra_rand,
+                  selected = spp_extra_rand[1])
+    }
+  })
+
+
 
   # Need to convert to 'RasterLayer' to plot w/ Leaflet
   empty.rast2<- empty.rast %>%
