@@ -17,6 +17,7 @@ library(googledrive)
 library(raster)
 library(rgdal)  #if not included, app doesn't load on shinyapps.io
 library(janitor)
+library(spatialEco)
 
 # load helper functions
 source("utils.R")
@@ -136,7 +137,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                           min = 0,
                                           max = 1,
                                           value = 0.5,
-                                          step = 0.25),
+                                          step = 0.1),
                               actionButton("habsuit_submit_button",
                                            "Submit Response",
                                            class = "btn-dark"),
@@ -162,7 +163,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                  tabPanel("Step 2",
                           sidebarLayout(
                             sidebarPanel(
-                              h4("Likelihood of Occupancy"),
+                              h4("Relative Prevalence"),
                               radioButtons("spp_type_occ",  #radio button to choose whether "main" or "extra" species
                                            "Species Category",
                                            choices = c("main", "extra"),
@@ -195,11 +196,11 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                            class = "btn-dark"),
                               br(), br(), br(), br(),
                               sliderInput("conf_occ",
-                                          "Confidence in Occupancy Selection:",
+                                          "Confidence in Relative Prevalence:",
                                           min = 0,
                                           max = 1,
                                           value = 0.5,
-                                          step = 0.25),
+                                          step = 0.1),
                               actionButton("occ_submit_button",
                                            "Submit Response",
                                            class = "btn-dark")
@@ -515,7 +516,24 @@ server <- function(input, output, session) {
 
   observeEvent(cell.ind(), {
 
-    rast.vals$int[cell.ind()$cell]<- rast.vals$int[cell.ind()$cell] + input$intensity
+    #create weighted Gaussian kernel to smooth intensity
+    gk <- spatialEco::gaussian.kernel(sigma = 3, n = ceiling(sqrt(nrow(cell.ind()))))
+    gk <- gk / max(gk)
+
+    xy<- click.df() %>%
+      st_as_sf(., coords = c("x", "y"), crs = 4326) %>%
+      st_transform(crs = crs(empty.rast)) %>%
+      st_buffer(., input$buff * 1000)
+    bbox <- st_bbox(xy)
+
+    gauss.rast <- raster(gk, xmn = bbox[1], xmx = bbox[3], ymn = bbox[2], ymx = bbox[4],
+                         crs = crs(empty.rast))
+    gauss.rast2 <- resample(gauss.rast, empty.rast2)
+    gk.vec <- values(gauss.rast2)[cell.ind()$cell]
+
+
+    # add updated weighted values to reactive vector
+    rast.vals$int[cell.ind()$cell]<- rast.vals$int[cell.ind()$cell] + (input$intensity*gk.vec)
 
     #set min (0) and max(1) values possible for raster
     rast.vals$int<- ifelse(rast.vals$int < 0, 0,
