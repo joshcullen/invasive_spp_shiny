@@ -517,7 +517,9 @@ server <- function(input, output, session) {
   observeEvent(cell.ind(), {
 
     #create weighted Gaussian kernel to smooth intensity
-    gk <- spatialEco::gaussian.kernel(sigma = 3, n = ceiling(sqrt(nrow(cell.ind()))))
+    gk <- spatialEco::gaussian.kernel(sigma = input$buff / 30,
+                                      n = ceiling(sqrt(nrow(cell.ind())))
+                                      )
     gk <- gk / max(gk)
 
     xy<- click.df() %>%
