@@ -103,7 +103,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                  tabPanel("About",
                           fluidRow(
                             column(width = 8, offset = 2, h4(strong("How to use this app"))),
-                            column(width = 8, offset = 2, p("As part of this expert elicitation, participants will first select the species on which they have expertise in the section below before proceeding to the next steps. These subsequent step will allow participants to first consider the influence of land cover on invasive species connectivity and habitat suitability. Additionally, participants will also be asked to self-assess their confidence in the spatial prediction they have made for each of the selected species before submitting their results. These results will then be used in the following days of the workshop.")
+                            column(width = 8, offset = 2, p("As part of this expert elicitation, participants will first consider the influence of land cover on invasive species habitat suitability in the southeastern US followed by an estimate of their relative geographic prevalence. Additionally, participants will be asked to self-assess their confidence in the spatial prediction they have made for each species as well as their prior experience working with a given species. These results will then be used in the following days of the workshop.")
                             ),  #close column for text paragraph,
 
                             column(width = 8, offset = 2, h4(strong("Invasive species of interest"))),
@@ -195,6 +195,11 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                            "Clear Raster",
                                            class = "btn-dark"),
                               br(), br(), br(), br(),
+                              checkboxGroupInput("spp_exp",
+                                           "Do you have experience with this species? (Choose one)",
+                                           choices = c("Field", "Modeling", "Both", "Neither"),
+                                           selected = NULL
+                                           ),
                               sliderInput("conf_occ",
                                           "Confidence in Relative Prevalence:",
                                           min = 0,
@@ -240,36 +245,7 @@ server <- function(input, output, session) {
   })
 
 
-  # Create modal pop-up for entering name
-  popupModal <- function(failed = FALSE) {
-    modalDialog(
-      textInput("name", "Please enter your full name"),
-      if (failed)
-        div(tags$b("Your name is required", style = "color: red;")),
 
-      footer = tagList(
-        actionButton("ok", "OK")
-      )
-    )
-  }
-
-  # Create modal pop-up for confirmation of submission
-  submitModal <- function() {
-    modalDialog(
-      h3("Your response has been submitted")
-    )
-  }
-
-  failedSubmitModal <- function() {
-    modalDialog(
-      div(tags$b("You must first update the map by clicking the 'Update Suitability' button.",
-      style = "color: red;")),
-
-      footer = tagList(
-        actionButton("ok", "OK")
-      )
-    )
-  }
 
   # Show modal when button is clicked.
   showModal(popupModal())
@@ -370,6 +346,7 @@ server <- function(input, output, session) {
   observeEvent(input$dynamic1, {
 
     map(hab.id, updateSliderInput01)
+    updateSliderInput(inputId = "conf_habsuit", value = 0.5)
     session$sendCustomMessage(type = "resetValue", message = "update_button")
 
   })
@@ -381,7 +358,7 @@ server <- function(input, output, session) {
 
     if (!isTruthy(input$update_button)) {
 
-      showModal(failedSubmitModal())
+      showModal(failedSubmitModal_habsuit())
 
     } else {
 
@@ -588,13 +565,33 @@ server <- function(input, output, session) {
   })
 
 
+
+  ### Reset confidence slider and prior experience check boxes when changing species selection
+
+  observeEvent(input$dynamic2, {
+
+    updateSliderInput(inputId = "conf_occ", value = 0.5)
+    updateCheckboxGroupInput(inputId = "spp_exp", selected = character(0))
+    # session$sendCustomMessage(type = "resetValue", message = "spp_exp")
+
+  })
+
+
   #Collect and export responses
+
   observeEvent(input$occ_submit_button, {
+
+    if (!isTruthy(input$occmap_click) | is.null(input$spp_exp)) {
+
+        showModal(failedSubmitModal_occ())
+
+    } else {
 
     occ_conf_export<- data.frame(
       Name = input$name,
       Species = input$dynamic2,
-      Suitability_confidence = input$conf_occ,
+      Occupancy_confidence = input$conf_occ,
+      Prior_experience = input$spp_exp,
       Time_Period = input$radio
     )
 
@@ -621,6 +618,8 @@ server <- function(input, output, session) {
 
     # Show modal when button is clicked.
     showModal(submitModal())
+
+    }  #close if-else statement
 
   })  #close observeEvent
 

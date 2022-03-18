@@ -1,4 +1,56 @@
 
+# Create modal pop-up for entering name
+popupModal <- function(failed = FALSE) {
+  modalDialog(
+    textInput("name", "Please enter your full name"),
+    if (failed)
+      div(tags$b("Your name is required", style = "color: red;")),
+
+    footer = tagList(
+      actionButton("ok", "OK")
+    )
+  )
+}
+
+#----------------------------------------
+
+# Create modal pop-up for confirmation of submission
+submitModal <- function() {
+  modalDialog(
+    h3("Your response has been submitted")
+  )
+}
+
+#----------------------------------------
+
+# Create modal to tell users what they are required to do for habitat suitability page
+failedSubmitModal_habsuit <- function() {
+  modalDialog(
+    div(tags$b("You must first update the map by clicking the 'Update Suitability' button.",
+               style = "color: red;")),
+
+    footer = tagList(
+      actionButton("ok", "OK")
+    )
+  )
+}
+
+#----------------------------------------
+
+# Create modal to tell users what they are required to do for relative prevalence page
+failedSubmitModal_occ <- function() {
+  modalDialog(
+    div(tags$b("You must first update the map by clicking on the raster layer and specifying your previous experience with this species.",
+               style = "color: red;")),
+
+    footer = tagList(
+      actionButton("ok", "OK")
+    )
+  )
+}
+
+#----------------------------------------
+
 # Function to add species photos and common names to UI
 
 insertSppPhoto <- function(lab, photo_path) {
