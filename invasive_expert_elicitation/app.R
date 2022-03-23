@@ -97,6 +97,7 @@ terra::values(empty.rast)[!is.na(terra::values(empty.rast))]<- 0
 
 # Define UI for application
 ui <- navbarPage("Expert Elicitation of Invasive Species",
+                 header = tags$head(includeHTML("gtag.html")),
                  theme = bs_theme(bootswatch = "yeti", version = 5),
 
 
