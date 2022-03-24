@@ -365,6 +365,7 @@ server <- function(input, output, session) {
 
     habsuit_conf_export<- data.frame(
       Name = input$name,
+      Date = Sys.time(),
       Species = input$dynamic1,
       Suitability_confidence = input$conf_habsuit
     )
@@ -590,6 +591,7 @@ server <- function(input, output, session) {
 
     occ_conf_export<- data.frame(
       Name = input$name,
+      Date = Sys.time(),
       Species = input$dynamic2,
       Occupancy_confidence = input$conf_occ,
       Prior_experience = input$spp_exp,
