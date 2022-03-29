@@ -275,7 +275,6 @@ server <- function(input, output, session) {
 
     # Add land cover name to lulc.df
     lulc.df<- left_join(lulc.df, nlcd_data[,1:2], by = 'nlcd')
-    # names(lulc.df)[3]<- "value"
 
 
 
@@ -379,6 +378,7 @@ server <- function(input, output, session) {
     fileName <- paste(gsub(pattern = " ", replacement = "", input$name),
                       as.Date.character(Sys.time()),
                       input$dynamic1,
+                      input$conf_habsuit,
                       "habsuit.tif",
                       sep = "_")
     # Write the data to a temporary file locally
@@ -607,6 +607,7 @@ server <- function(input, output, session) {
     fileName <- paste(gsub(pattern = " ", replacement = "", input$name),
                       as.Date.character(Sys.time()),
                       input$dynamic2,
+                      input$conf_habsuit,
                       input$radio,
                       "occ.tif",
                       sep = "_")
