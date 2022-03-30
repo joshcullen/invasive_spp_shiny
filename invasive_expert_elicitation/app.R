@@ -58,23 +58,24 @@ names(lulc) <- "nlcd"
 
 
 # Spp names sorted for "About" page
-spp_names<- c("Burmese python", "Argentine black and white tegu", "Nile monitor", "African rock python", "Green iguana",
-              "Black spiny-tailed iguana", "Spectacled caiman", "Yellow anaconda", "Cuban tree frog", "Wild boar",
-              "Reticulated python", "Boa constrictor", "Asian water monitor", "Mexican spiny-tailed iguana", "Red tegu",
-              "Ball python", "Cane toad", "Brown basilisk", "Green anaconda", "Muscovy duck") %>%
+spp_names<- c("Burmese python", "Argentine black and white tegu", "Nile monitor", "Green iguana",
+              "Black spiny-tailed iguana", "Cuban tree frog", "Cane toad", "Red tegu",
+              "Ball python", "Reticulated python") %>%
   sort()
 
 # Spp names for "main" spp of interest
-spp_main <- c("Burmese python", "Argentine black and white tegu", "Nile monitor", "Green iguana", "Black spiny-tailed iguana",
-              "Cuban tree frog", "Cane toad", "Red tegu", "Ball python", "Reticulated python", "American crocodile")
+spp_main <- c("Burmese python", "Argentine black and white tegu", "Nile monitor", "Green iguana",
+              "Black spiny-tailed iguana", "Cuban tree frog", "Cane toad", "Red tegu",
+              "Ball python", "Reticulated python", "American crocodile")
 
 # Spp names randomized for use in app
 spp_main_rand <- sample(spp_main, length(spp_main), replace = FALSE)
 
 
 # Spp names for "extra" spp of interest
-spp_extra <- c("African rock python", "Spectacled caiman", "Yellow anaconda", "Wild boar", "Boa constrictor", "Asian water monitor",
-               "Mexican spiny-tailed iguana", "Brown basilisk", "Green anaconda", "Muscovy duck", "Nutria", "Egyptian Goose",
+spp_extra <- c("African rock python", "Spectacled caiman", "Yellow anaconda", "Wild boar",
+               "Boa constrictor", "Asian water monitor", "Mexican spiny-tailed iguana",
+               "Brown basilisk", "Green anaconda", "Muscovy duck", "Nutria", "Egyptian Goose",
                "Rhesus macaque", "Gopher tortoise", "Florida scrubjay")
 
 # Spp names randomized for use in app
@@ -104,7 +105,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                  tabPanel("About",
                           fluidRow(
                             column(width = 8, offset = 2, h4(strong("How to use this app"))),
-                            column(width = 8, offset = 2, p("As part of this expert elicitation, participants will first consider the influence of land cover on invasive species habitat suitability in the southeastern US followed by an estimate of their relative geographic prevalence. Additionally, participants will be asked to self-assess their confidence in the spatial prediction they have made for each species as well as their prior experience working with a given species. These results will then be used in the following days of the workshop.")
+                            column(width = 8, offset = 2, p("As part of this expert elicitation, participants will first consider the influence of land cover on invasive species habitat suitability in the southeastern US followed by an estimate of their relative geographic prevalence. Additionally, participants will be asked to self-assess their confidence in the spatial prediction they have made for each species as well as their prior experience working with a given species. These results will then be used in the following days of the workshop to derive and critique estimates of species' current distribution.")
                             ),  #close column for text paragraph,
 
                             column(width = 8, offset = 2, h4(strong("Invasive species of interest"))),
