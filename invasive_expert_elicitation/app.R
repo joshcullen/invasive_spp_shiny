@@ -286,13 +286,16 @@ server <- function(input, output, session) {
                         values = nlcd_data$Color,
                         labels = nlcd_data$Class) +
       geom_sf(data = se, size = 0.75, color = "black", fill = "transparent") +
-      labs(x = "Longitude", y = "Latitude") +
+      labs(x = "Longitude",
+           y = "Latitude",
+           caption = "Data source: National Land Cover Database (2019)") +
       theme_bw() +
       theme(axis.title = element_text(size = 18),
             axis.text = element_text(size = 14),
             panel.grid = element_blank(),
             legend.title = element_text(size = 14, face = "bold"),
-            legend.text = element_text(size = 12)) +
+            legend.text = element_text(size = 12),
+            plot.caption = element_text(hjust = 0 , size = 10, face= "italic")) +
       coord_sf()
   })
 
