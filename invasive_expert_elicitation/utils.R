@@ -66,14 +66,14 @@ insertSppPhoto <- function(lab, photo_path) {
 
 # Function to generate sliders for creating habitat suitability map
 sliderInput01 <- function(id, lab) {
-  sliderInput(inputId = id, label = lab, min = 0, max = 1, value = 0.5, step = 0.05)
+  sliderInput(inputId = id, label = lab, min = -1, max = 1, value = 0, step = 0.05)
 }
 
 #----------------------------------------
 
 # Function to reset sliders for habitat suitability tab when changing species
 updateSliderInput01 <- function(id) {
-  updateSliderInput(inputId = id, value = 0.5)
+  updateSliderInput(inputId = id, value = 0)
 }
 
 #----------------------------------------

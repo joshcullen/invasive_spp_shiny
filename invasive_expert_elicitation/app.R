@@ -18,6 +18,7 @@ library(raster)
 library(rgdal)  #if not included, app doesn't load on shinyapps.io
 library(janitor)
 library(spatialEco)
+library(MetBrewer)
 
 # load helper functions
 source("utils.R")
@@ -50,7 +51,7 @@ nlcd_data<- read.csv("NLCD_metadata.csv")
 
 ### Create new raster for displaying habitat suitability
 hab_suit<- lulc
-values(hab_suit)[!is.na(values(lulc))]<- 0.5
+values(hab_suit)[!is.na(values(lulc))]<- 0
 
 
 # Rename NLCD layer
@@ -171,10 +172,6 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                            choices = c("main", "extra"),
                                            selected = "main"),
                               uiOutput("species_occ"),  #dynamically updated dropdown of spp names
-                              radioButtons("radio",
-                                           "Time Period",
-                                           choices = c("Current", "Future (2050)"),
-                                           selected = "Current"),
                               sliderInput("alpha",
                                           "Raster Opacity",
                                           min = 0,
@@ -327,7 +324,7 @@ server <- function(input, output, session) {
 
       ggplot() +
         geom_tile(data = hab_suit.df, aes(x, y, fill = value), alpha = 0.8) +
-        scale_fill_viridis_c("Suitability", option = "magma", limits = c(0,1),
+        scale_fill_gradientn("Suitability", colors = met.brewer("OKeeffe1"), limits = c(-1,1),
                              na.value = "transparent") +
         geom_sf(data = se, size = 0.75, color = "black", fill = "transparent") +
         labs(x = "Longitude", y = "Latitude") +
@@ -598,8 +595,7 @@ server <- function(input, output, session) {
       Date = Sys.time(),
       Species = input$dynamic2,
       Occupancy_confidence = input$conf_occ,
-      Prior_experience = input$spp_exp,
-      Time_Period = input$radio
+      Prior_experience = input$spp_exp
     )
 
     #Export data to Google Sheets
@@ -612,7 +608,6 @@ server <- function(input, output, session) {
                       as.Date.character(Sys.time()),
                       input$dynamic2,
                       input$conf_habsuit,
-                      input$radio,
                       "occ.tif",
                       sep = "_")
     #Write the data to a temporary file locally
