@@ -7,6 +7,7 @@
 
 
 library(shiny)
+library(shinyWidgets)
 library(terra)  #in place of {raster}
 library(tidyverse)
 library(leaflet)
@@ -124,6 +125,29 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                           sidebarLayout(
                             sidebarPanel(
                               h4("Expected Suitability of Land Cover"),
+                              dropMenu(
+                                actionBttn(
+                                  inputId = "glossary1",
+                                  label = NULL,
+                                  style = "material-circle",
+                                  color = "primary",
+                                  icon = icon("info"),
+                                  size = "xs"
+                                  ),
+                                tags$div(
+                                  tags$h3("Glossary"),
+                                  tags$ul(
+                                    tags$li("Values < 0 are unsuitable habitat"),
+                                    tags$li("Values > 0 are unsuitable habitat"),
+                                    tags$li("More terms here"),
+                                    tags$li("More definitions")
+                                  )
+                                ),
+                                theme = "light-border",
+                                placement = "right",
+                                arrow = FALSE,
+                                trigger = "mouseenter"
+                              ),
                               radioButtons("spp_type_habsuit",  #radio button to choose whether "main" or "extra" species
                                            "Species Category",
                                            choices = c("main", "extra"),
@@ -167,6 +191,28 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                           sidebarLayout(
                             sidebarPanel(
                               h4("Relative Prevalence"),
+                              dropMenu(
+                                actionBttn(
+                                  inputId = "glossary2",
+                                  label = NULL,
+                                  style = "material-circle",
+                                  color = "primary",
+                                  icon = icon("info"),
+                                  size = "xs"
+                                  ),
+                                tags$div(
+                                  tags$h3("Glossary"),
+                                  tags$ul(
+                                    tags$li("Relative prevalence = ..."),
+                                    tags$li("More terms here"),
+                                    tags$li("More definitions")
+                                  )
+                                ),
+                                theme = "light-border",
+                                placement = "right",
+                                arrow = FALSE,
+                                trigger = "mouseenter"
+                              ),
                               radioButtons("spp_type_occ",  #radio button to choose whether "main" or "extra" species
                                            "Species Category",
                                            choices = c("main", "extra"),
