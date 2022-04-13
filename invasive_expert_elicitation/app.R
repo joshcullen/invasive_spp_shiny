@@ -127,7 +127,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                               h4("Expected Suitability of Land Cover"),
                               dropMenu(
                                 actionBttn(
-                                  inputId = "glossary1",
+                                  inputId = "info1",
                                   label = NULL,
                                   style = "material-circle",
                                   color = "primary",
@@ -135,18 +135,20 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                   size = "xs"
                                   ),
                                 tags$div(
-                                  tags$h3("Glossary"),
+                                  tags$h3("Info"),
                                   tags$ul(
+                                    tags$li("There are 15 land-use/land-cover classes in total"),
+                                    tags$li("Land cover suitability is a numerical index that represents the capacity of a given habitat to support a selected species"),
                                     tags$li("Values < 0 are unsuitable habitat"),
                                     tags$li("Values > 0 are unsuitable habitat"),
-                                    tags$li("More terms here"),
-                                    tags$li("More definitions")
+                                    tags$li("Start with species under 'main' category")
                                   )
                                 ),
                                 theme = "light-border",
                                 placement = "right",
                                 arrow = FALSE,
-                                trigger = "mouseenter"
+                                trigger = "mouseenter",
+                                maxWidth = "500px"
                               ),
                               radioButtons("spp_type_habsuit",  #radio button to choose whether "main" or "extra" species
                                            "Species Category",
@@ -154,11 +156,30 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                            selected = "main"),
                               uiOutput("species_habsuit"),  #dynamically updated dropdown of spp names
                               br(),
+                              h6(tags$strong("For any given land cover, a zero indicates no knowledge of (and no confidence in) applying a suitability")),
                               hab.sliders,  #habitat suitability sliders
                               actionButton("update_button",
                                            "Update Suitability",
                                            class = "btn-primary"),
                               br(), br(), br(), br(),
+                              dropMenu(
+                                actionBttn(
+                                  inputId = "info2",
+                                  label = NULL,
+                                  style = "material-circle",
+                                  color = "primary",
+                                  icon = icon("info"),
+                                  size = "xs"
+                                ),
+                                tags$div(
+                                  tags$h6("Rank your overall confidence in your assignment of suitability across all 15 LU/LC")
+                                ),
+                                theme = "light-border",
+                                placement = "right",
+                                arrow = FALSE,
+                                trigger = "mouseenter",
+                                maxWidth = "500px"
+                              ),
                               sliderInput("conf_habsuit",
                                           "Confidence in Habitat Suitability:",
                                           min = 0,
@@ -190,10 +211,10 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                  tabPanel("Step 2",
                           sidebarLayout(
                             sidebarPanel(
-                              h4("Relative Prevalence"),
+                              h4("Prevalence"),
                               dropMenu(
                                 actionBttn(
-                                  inputId = "glossary2",
+                                  inputId = "info3",
                                   label = NULL,
                                   style = "material-circle",
                                   color = "primary",
@@ -201,12 +222,12 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                   size = "xs"
                                   ),
                                 tags$div(
-                                  tags$h3("Glossary"),
-                                  tags$ul(
-                                    tags$li("Relative prevalence = ..."),
-                                    tags$li("More terms here"),
-                                    tags$li("More definitions")
-                                  )
+                                  tags$h6(tags$strong("Prevalence is an estimate delineated by two components:")),
+                                  tags$ol(
+                                    tags$li("a species' overall extent of occurrence"),
+                                    tags$li("within the extent of occurrence, applying a relative estimate of population size between 0 and 1")
+                                  ),
+                                  tags$h6(tags$strong("NOTE: For some species not fully established, there may be a relatively small area of prevalence."))
                                 ),
                                 theme = "light-border",
                                 placement = "right",
@@ -245,8 +266,26 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                            choices = c("Field", "Modeling", "Both", "Neither"),
                                            selected = NULL
                                            ),
+                              dropMenu(
+                                actionBttn(
+                                  inputId = "info4",
+                                  label = NULL,
+                                  style = "material-circle",
+                                  color = "primary",
+                                  icon = icon("info"),
+                                  size = "xs"
+                                ),
+                                tags$div(
+                                  tags$h6("Rank your overall confidence in your assignment of species prevalence")
+                                ),
+                                theme = "light-border",
+                                placement = "right",
+                                arrow = FALSE,
+                                trigger = "mouseenter",
+                                maxWidth = "500px"
+                              ),
                               sliderInput("conf_occ",
-                                          "Confidence in Relative Prevalence:",
+                                          "Confidence in Prevalence:",
                                           min = 0,
                                           max = 1,
                                           value = 0.5,
