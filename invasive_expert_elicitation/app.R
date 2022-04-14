@@ -140,7 +140,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                     tags$li("There are 15 land-use/land-cover classes in total"),
                                     tags$li("Land cover suitability is a numerical index that represents the capacity of a given habitat to support a selected species"),
                                     tags$li("Values < 0 are unsuitable habitat"),
-                                    tags$li("Values > 0 are unsuitable habitat"),
+                                    tags$li("Values > 0 are suitable habitat"),
                                     tags$li("Start with species under 'main' category")
                                   )
                                 ),
