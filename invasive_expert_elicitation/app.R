@@ -227,6 +227,7 @@ ui <- navbarPage("Expert Elicitation of Invasive Species",
                                     tags$li("a species' overall extent of occurrence"),
                                     tags$li("within the extent of occurrence, applying a relative estimate of population size between 0 and 1")
                                   ),
+                                  tags$h6(tags$strong("Mapping specific habitat features in this module is unnecessary because Step 1 (i.e., habitat suitability) estimates will adjust each prevalence map to account for specific habitat features at fine scales.")),
                                   tags$h6(tags$strong("NOTE: For some species not fully established, there may be a relatively small area of prevalence."))
                                 ),
                                 theme = "light-border",
