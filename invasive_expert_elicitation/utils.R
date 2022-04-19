@@ -64,9 +64,40 @@ insertSppPhoto <- function(lab, photo_path) {
 
 #----------------------------------------
 
+# Function to add info button for each of the habitat suitability sliders
+
+sliderInfo <- function(id, desc) {
+  dropMenu(
+    actionBttn(
+      inputId = paste0("info_", id),
+      label = NULL,
+      style = "material-circle",
+      color = "primary",
+      icon = icon("info"),
+      size = "xs"
+    ),
+    tags$div(
+      tags$h6(desc)
+    ),
+    theme = "light-border",
+    placement = "right",
+    arrow = FALSE,
+    trigger = "mouseenter",
+    maxWidth = "500px"
+  )
+}
+
+#----------------------------------------
+
 # Function to generate sliders for creating habitat suitability map
-sliderInput01 <- function(id, lab) {
-  sliderInput(inputId = id, label = lab, min = -1, max = 1, value = 0, step = 0.05)
+sliderInput01 <- function(id, lab, desc) {
+  sliderInput(inputId = id,
+              label = tags$span(lab,
+                                sliderInfo(id, desc)),
+              min = -1,
+              max = 1,
+              value = 0,
+              step = 0.05)
 }
 
 #----------------------------------------

@@ -87,7 +87,11 @@ spp_extra_rand <- sample(spp_extra, length(spp_extra), replace = FALSE)
 # Define sliders for habitat suitability map in UI
 hab.id <- janitor::make_clean_names(nlcd_data$Class)
 hab.label<- nlcd_data$Class
-hab.sliders <- map2(hab.id, hab.label, sliderInput01)
+hab.desc <- nlcd_data$Description
+hab.sliders <- pmap(data.frame(id = hab.id,
+                               lab = hab.label,
+                               desc = hab.desc),
+                    sliderInput01)
 
 
 # Define raster layer for interactively modifying as part of occupancy;
