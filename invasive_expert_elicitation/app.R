@@ -4,7 +4,8 @@
 ### determine potential habitat suitability and future range shifts of invasive spp in the SE ### ### United States                                                                             ###
 #################################################################################################
 
-
+# hide PROJ6 warnings from {rgdal}
+options("rgdal_show_exportToProj4_warnings"="none")
 
 library(shiny)
 library(shinyWidgets)
@@ -62,13 +63,13 @@ names(lulc) <- "nlcd"
 # Spp names sorted for "About" page
 spp_names<- c("Burmese python", "Argentine black and white tegu", "Nile monitor", "Green iguana",
               "Black spiny-tailed iguana", "Cuban tree frog", "Cane toad", "Red tegu",
-              "Ball python", "Reticulated python") %>%
+              "Ball python", "Reticulated python", "Muscovy duck", "Nutria") %>%
   sort()
 
 # Spp names for "main" spp of interest
 spp_main <- c("Burmese python", "Argentine black and white tegu", "Nile monitor", "Green iguana",
               "Black spiny-tailed iguana", "Cuban tree frog", "Cane toad", "Red tegu",
-              "Ball python", "Reticulated python", "American crocodile")
+              "Ball python", "Reticulated python", "Muscovy duck", "Nutria", "American crocodile")
 
 # Spp names randomized for use in app
 spp_main_rand <- sample(spp_main, length(spp_main), replace = FALSE)
@@ -77,7 +78,7 @@ spp_main_rand <- sample(spp_main, length(spp_main), replace = FALSE)
 # Spp names for "extra" spp of interest
 spp_extra <- c("African rock python", "Spectacled caiman", "Yellow anaconda", "Wild boar",
                "Boa constrictor", "Asian water monitor", "Mexican spiny-tailed iguana",
-               "Brown basilisk", "Green anaconda", "Muscovy duck", "Nutria", "Egyptian Goose",
+               "Brown basilisk", "Green anaconda", "Egyptian Goose",
                "Rhesus macaque", "Gopher tortoise", "Florida scrubjay")
 
 # Spp names randomized for use in app
