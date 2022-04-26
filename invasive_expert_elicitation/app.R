@@ -560,9 +560,9 @@ server <- function(input, output, session) {
   })
 
   # Check that coordinates are updated properly
-  output$Click_text<-renderText({
-    print(unlist(click.df()))
-  })
+  # output$Click_text<-renderText({
+  #   print(unlist(click.df()))
+  # })
 
 
   # Update selected cells
@@ -587,30 +587,39 @@ server <- function(input, output, session) {
 
   observeEvent(cell.ind(), {
 
-    #create weighted Gaussian kernel to smooth intensity
-    gk <- spatialEco::gaussian.kernel(sigma = input$buff / 30,
-                                      n = ceiling(sqrt(nrow(cell.ind())))
-                                      )
-    gk <- gk / max(gk)
+    # account for point/buffer selections that don't overlap w/ raster layer
+    if (nrow(cell.ind()) == 0) {
 
-    xy<- click.df() %>%
-      st_as_sf(., coords = c("x", "y"), crs = 4326) %>%
-      st_transform(crs = crs(empty.rast)) %>%
-      st_buffer(., input$buff * 1000)
-    bbox <- st_bbox(xy)
+      rast.vals$int <- rast.vals$int  #returns current raster layer
 
-    gauss.rast <- raster(gk, xmn = bbox[1], xmx = bbox[3], ymn = bbox[2], ymx = bbox[4],
-                         crs = crs(empty.rast))
-    gauss.rast2 <- resample(gauss.rast, empty.rast2)
-    gk.vec <- values(gauss.rast2)[cell.ind()$cell]
+    } else {
+
+      #create weighted Gaussian kernel to smooth intensity
+      gk <- spatialEco::gaussian.kernel(sigma = input$buff / 30,
+                                        n = ceiling(sqrt(nrow(cell.ind())))
+      )
+      gk <- gk / max(gk)
+
+      xy<- click.df() %>%
+        st_as_sf(., coords = c("x", "y"), crs = 4326) %>%
+        st_transform(crs = crs(empty.rast)) %>%
+        st_buffer(., input$buff * 1000)
+      bbox <- st_bbox(xy)
+
+      gauss.rast <- raster(gk, xmn = bbox[1], xmx = bbox[3], ymn = bbox[2], ymx = bbox[4],
+                           crs = crs(empty.rast))
+      gauss.rast2 <- resample(gauss.rast, empty.rast2)
+      gk.vec <- values(gauss.rast2)[cell.ind()$cell]
 
 
-    # add updated weighted values to reactive vector
-    rast.vals$int[cell.ind()$cell]<- rast.vals$int[cell.ind()$cell] + (input$intensity*gk.vec)
+      # add updated weighted values to reactive vector
+      rast.vals$int[cell.ind()$cell]<- rast.vals$int[cell.ind()$cell] + (input$intensity*gk.vec)
 
-    #set min (0) and max(1) values possible for raster
-    rast.vals$int<- ifelse(rast.vals$int < 0, 0,
-                           ifelse(rast.vals$int > 1, 1, rast.vals$int))
+      #set min (0) and max(1) values possible for raster
+      rast.vals$int<- ifelse(rast.vals$int < 0, 0,
+                             ifelse(rast.vals$int > 1, 1, rast.vals$int))
+
+    }
 
   })
 
