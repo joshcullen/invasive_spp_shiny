@@ -17,7 +17,7 @@ library(bslib)
 library(googlesheets4)
 library(googledrive)
 library(raster)
-library(rgdal)  #if not included, app doesn't load on shinyapps.io
+# library(rgdal)  #if not included, app doesn't load on shinyapps.io
 library(janitor)
 library(spatialEco)
 library(MetBrewer)
@@ -596,7 +596,7 @@ server <- function(input, output, session) {
 
       #create weighted Gaussian kernel to smooth intensity
       gk <- spatialEco::gaussian.kernel(sigma = input$buff / 30,
-                                        n = ceiling(sqrt(nrow(cell.ind())))
+                                        s = ceiling(sqrt(nrow(cell.ind())))
       )
       gk <- gk / max(gk)
 
