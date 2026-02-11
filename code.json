@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Invasive Species Expert Elicitation App",
+    "organization": "U.S. Geological Survey",
+    "description": "Code to collect data from an expert elicitation workshop on the distributions of invasive species in the southeastern United States.",
+    "version": "main",
+    "status": "Development",
+
+    "permissions": {
+      "usageType": "openSource",
+      "licenses": [
+        {
+          "name": "Public Domain, CC0-1.0",
+          "URL": "https://github.com/joshcullen/invasive_spp_shiny/blob/main/LICENSE.md"
+        }
+      ]
+    },
+
+    "homepageURL": "https://github.com/joshcullen/invasive_spp_shiny",
+    "downloadURL": "https://github.com/joshcullen/invasive_spp_shiny/archive/refs/heads/main.zip",
+    "disclaimerURL": "https://github.com/joshcullen/invasive_spp_shiny/blob/main/DISCLAIMER.md",
+    "repositoryURL": "https://github.com/joshcullen/invasive_spp_shiny.git",
+    "vcs": "git",
+
+    "laborHours": 160,
+
+    "tags": [
+      "invasive species",
+      "expert elicitation",
+      "risk"
+    ],
+
+    "languages": [
+      "R"
+    ],
+
+    "contact": {
+      "name": "Joshua A. Cullen",
+      "email": "joshcullen10@gmail.com"
+    },
+
+    "date": {
+      "metadataLastUpdated": "2026-02-11"
+    }
+  }
+]
+
