@@ -85,17 +85,13 @@ Packages dependencies can be found at the top of the [app.R](https://github.com/
 
 ### **Runtime**
 
-Initial load time is approximately 5 minutes on a 64-bit operating system, x64-based processor, 13th Gen Intel(R) Core(TM) i9-13950HX 2.20 GHz, with 64.0 GB Installed RAM, 8 GB GPU. Load times may vary on other systems and through the hosting platform. Additional loading is performed based on user inputs and will vary.
+Initial load time is approximately 5 seconds. This app is relatively lightweight, so is quick to load from a cold-start.
 
 ### **Disclaimers**
 
 **Software Disclaimer**
 
 This software is preliminary or provisional and is subject to revision. It is being provided to meet the need for timely best science. The software has not received final approval by the U.S. Geological Survey (USGS). No warranty, expressed or implied, is made by the USGS or the U.S. Government as to the functionality of the software and related material nor shall the fact of release constitute any such warranty. The software is provided on the condition that neither the USGS nor the U.S. Government shall be held liable for any damages resulting from the authorized or unauthorized use of the software.
-
-**Data Disclaimer**
-
-These data are preliminary or provisional and are subject to revision. They are being provided to meet the need for timely best science. The data have not received final approval by the U.S. Geological Survey (USGS) and are provided on the condition that neither the USGS nor the U.S. Government shall be held liable for any damages resulting from the authorized or unauthorized use of the data.
 
 ### **License**
 
