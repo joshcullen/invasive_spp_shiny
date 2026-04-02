@@ -1,4 +1,6 @@
 
+[![DOI](https://zenodo.org/badge/417505420.svg)](https://doi.org/10.5281/zenodo.19391091)
+
 ## **Invasive Species Expert Elicitation App**
 
 This tool was designed to support a workshop on the projected expansion of invasive species in the southeast United States (US). The workshop was hosted by project leads at the University of Florida and was supported by the Southeast Climate Adaption Science Center (SECASC). Given the general lack of information on the distributions and habitat preferences of invasive species, this tool sought to collect the best available information based on knowledge from experts in the field.
@@ -44,6 +46,9 @@ A set of widgets to be adjusted by the user are provided in the sidebar, includi
 ### **Contributors**
 
 Joshua A. Cullen *joshcullen10@gmail.com* <br> Luke Evans *lukeevans@ufl.edu* <br> Alex Baecher *jbaecher@ufl.edu* <br> Brett Scheffers *brett.scheffers@ufl.edu* 
+
+### **Citation**
+Cullen, J., Evans, L., Baecher, A., & Scheffers, B. (2026). joshcullen/invasive_spp_shiny: v1.0.1 (v1.0.1). Zenodo. https://doi.org/10.5281/zenodo.19391092.
 
 ### **Software Dependencies**
 
